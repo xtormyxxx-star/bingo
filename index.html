@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>반응형 스마트폰 습관 빙고 (4x4)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    body { 
+      font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; 
+      user-select: none; 
+      background-color: #f8fafc; 
+      touch-action: none; 
+      overflow: hidden; 
+      overscroll-behavior: none;
+    }
+    
+    .drop-slot {
+      background-color: #e2e8f0;
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px; /* 4x4라 카드가 작아지므로 모서리 둥글기 살짝 줄임 */
+      transition: background-color 0.2s;
+      container-type: inline-size; 
+    }
+    .drop-slot.drag-over { background-color: #c7d2fe; border-color: #818cf8; border-style: solid; }
+    
+    /* 4x4 격자에 맞게 텍스트/아이콘 크기 미세 조정 */
+    .responsive-icon { font-size: 1.5rem; font-size: 30cqi; line-height: 1.1; margin-bottom: 2cqi; }
+    .responsive-text { font-size: 0.55rem; font-size: 11cqi; line-height: 1.2; font-weight: 800; color: #334155; word-break: keep-all; }
+    .responsive-check { font-size: 2.5rem; font-size: 55cqi; }
+
+    .card {
+      touch-action: none; 
+      cursor: grab;
+      transition: transform 0.1s;
+    }
+    .card:active { cursor: grabbing; }
+    .card * { pointer-events: none; }
+    
+    .card.checked {
+      background-color: #d1fae5 !important;
+      border-color: #10b981 !important;
+      transform: scale(0.95);
+    }
+    .card.checked .check-mark { display: flex; }
+    .check-mark { display: none; }
+  </style>
+</head>
+<body class="w-screen h-screen flex flex-col items-center justify-center p-2 sm:p-4 text-slate-800">
+
+  <button id="reset-btn" class="hidden absolute top-4 right-4 z-50 bg-white/90 px-4 py-2 rounded-xl font-bold text-sm sm:text-base shadow-md border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all active:scale-95">
+    🔄 다시 만들기
+  </button>
+
+  <div id="main-container" class="flex flex-col landscape:flex-row w-full h-full max-w-6xl mx-auto gap-4 landscape:gap-8 transition-all duration-500 items-center justify-center">
+    
+    <div id="grid-section" class="flex flex-col flex-1 w-full h-full items-center justify-center min-h-0 transition-all duration-500 ease-in-out">
+      <div class="text-center mb-2 sm:mb-4 flex-shrink-0">
+        <h1 id="main-title" class="text-lg sm:text-2xl md:text-3xl font-black text-indigo-700">나만의 빙고판 만들기</h1>
+        <p id="sub-title" class="text-xs sm:text-sm text-slate-500 font-semibold mb-2">카드를 끌어다 원하는 위치에 놓으세요!</p>
+        
+        <!-- 빙고 카운터 -->
+        <div id="bingo-counter" class="hidden inline-flex items-center px-4 py-1.5 bg-indigo-100 text-indigo-700 font-bold rounded-full text-sm sm:text-base border border-indigo-200 shadow-sm transition-all">
+          🔥 완성한 빙고: &nbsp;<span id="bingo-count" class="text-lg sm:text-xl font-black text-indigo-600">0</span> 줄
+        </div>
+      </div>
+      
+      <!-- 4x4 Grid 설정 -->
+      <div id="bingo-grid" class="grid grid-cols-4 gap-1 sm:gap-1.5 w-full max-w-[min(100%,_50vh)] landscape:max-w-[min(100%,_80vh)] aspect-square shrink-0">
+      </div>
+    </div>
+
+    <div id="pool-section" class="flex flex-col w-full max-w-[min(100%,_45vh)] landscape:max-w-none landscape:w-[40%] landscape:h-full items-center justify-center relative transition-all duration-500 shrink-0">
+      <div class="text-center mb-2 flex-shrink-0">
+        <h2 class="text-sm sm:text-base lg:text-lg font-bold text-slate-600">남은 카드</h2>
+      </div>
+      
+      <!-- 4x4 Grid 설정 -->
+      <div id="card-pool" class="grid grid-cols-4 gap-1 sm:gap-1.5 w-full landscape:max-w-[min(100%,_75vh)] aspect-square bg-slate-100 p-2 sm:p-3 rounded-2xl border-2 border-slate-200 shrink-0">
+      </div>
+
+      <div id="start-overlay" class="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-3xl hidden">
+        <div class="text-4xl mb-2">🎉</div>
+        <p class="font-bold text-slate-700 mb-3 text-sm sm:text-base">빙고판 완성!</p>
+        <button id="start-btn" class="bg-indigo-600 text-white font-black text-base sm:text-lg px-6 py-3 rounded-2xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all">
+          빙고 시작!
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="bingo-modal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-[100]">
+    <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-11/12 text-center shadow-2xl transform scale-110 transition-transform">
+      <div class="text-6xl mb-4">🎊</div>
+      <h2 class="text-3xl sm:text-4xl font-black text-indigo-600 mb-2 tracking-tight">BINGO!</h2>
+      <p class="text-slate-600 font-bold mb-6 text-sm sm:text-base">빙고를 완성했습니다!</p>
+      <button id="close-modal-btn" class="w-full py-3.5 bg-indigo-500 text-white font-black rounded-2xl hover:bg-indigo-600 active:scale-95 transition-all shadow-md shadow-indigo-200">계속 진행하기</button>
+    </div>
+  </div>
+
+  <script>
+    // 4x4용 16개 항목 (기존 9개 + 추가 7개)
+    const itemsData = [
+      { id: 1, text: "침대에 누워 보다가<br>오래 봤다", icon: "🛏️" },
+      { id: 2, text: "“5분만” 하다가<br>30분이 지났다", icon: "⏰" },
+      { id: 3, text: "알림 때문에<br>하던 일을 멈췄다", icon: "🔔" },
+      { id: 4, text: "숏폼을 넘기다가<br>시간 감각을 잃었다", icon: "📱" },
+      { id: 5, text: "공부하기 싫어서<br>폰을 먼저 켰다", icon: "📚" },
+      { id: 6, text: "친구 답장을 기다리며<br>계속 확인했다", icon: "💬" },
+      { id: 7, text: "자기 전 폰을<br>보다가 늦게 잤다", icon: "🌙" },
+      { id: 8, text: "끄고 나서<br>“또 실패했다” 생각함", icon: "😟" },
+      { id: 9, text: "폰을 놓고도<br>계속 신경 쓰였다", icon: "💓" },
+      { id: 10, text: "화장실 갈 때<br>폰부터 챙겼다", icon: "🚽" },
+      { id: 11, text: "밥 먹을 때<br>영상을 꼭 틀었다", icon: "🍽️" },
+      { id: 12, text: "배터리가 부족하면<br>매우 불안했다", icon: "🔋" },
+      { id: 13, text: "이유 없이 화면을<br>자주 켰다 껐다", icon: "👆" },
+      { id: 14, text: "길을 걸으면서<br>폰을 본 적 있다", icon: "🚶" },
+      { id: 15, text: "해야 할 일을 미루고<br>스마트폰을 했다", icon: "⏳" },
+      { id: 16, text: "사용시간을 보고<br>놀란 적 있다", icon: "😲" }
+    ];
+
+    const bingoGrid = document.getElementById('bingo-grid');
+    const cardPool = document.getElementById('card-pool');
+    const startOverlay = document.getElementById('start-overlay');
+    const startBtn = document.getElementById('start-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const poolSection = document.getElementById('pool-section');
+    const mainContainer = document.getElementById('main-container');
+    const bingoCounter = document.getElementById('bingo-counter');
+    const bingoCountText = document.getElementById('bingo-count');
+    
+    let gameMode = 'SETUP'; 
+    let reportedBingos = new Set();
+
+    function initialize() {
+      bingoGrid.innerHTML = '';
+      cardPool.innerHTML = '';
+      
+      for(let i=0; i<16; i++) {
+        const slot = document.createElement('div');
+        slot.className = 'drop-slot relative w-full h-full flex items-center justify-center';
+        bingoGrid.appendChild(slot);
+      }
+
+      itemsData.forEach(item => {
+        const slot = document.createElement('div');
+        slot.className = 'drop-slot relative w-full h-full flex items-center justify-center !border-transparent !bg-transparent';
+        
+        const card = document.createElement('div');
+        card.className = 'card bg-white border-2 border-slate-200 rounded-lg w-full h-full flex flex-col items-center justify-center p-0.5 drop-shadow-sm absolute inset-0';
+        card.innerHTML = `
+          <div class="responsive-icon">${item.icon}</div>
+          <div class="responsive-text text-center">${item.text}</div>
+          <div class="check-mark absolute inset-0 bg-emerald-500/20 rounded-lg items-center justify-center backdrop-blur-[1px]">
+            <span class="responsive-check text-emerald-600 drop-shadow font-black opacity-90">⭕</span>
+          </div>
+        `;
+        
+        slot.appendChild(card);
+        cardPool.appendChild(slot);
+      });
+    }
+
+    let draggedCard = null;
+    let originalSlot = null;
+    let ghost = null;
+    let currentHoverSlot = null;
+
+    document.addEventListener('pointerdown', e => {
+      if (gameMode !== 'SETUP') return;
+      const card = e.target.closest('.card');
+      if (!card) return;
+
+      e.preventDefault(); 
+      draggedCard = card;
+      originalSlot = card.parentElement;
+      card.style.opacity = '0.3';
+
+      ghost = card.cloneNode(true);
+      ghost.classList.add('fixed', 'pointer-events-none', 'z-[1000]', 'scale-105', 'shadow-2xl');
+      ghost.style.opacity = '0.9';
+      
+      ghost.style.width = card.offsetWidth + 'px';
+      ghost.style.height = card.offsetHeight + 'px';
+      ghost.style.containerType = 'inline-size'; 
+      
+      document.body.appendChild(ghost);
+
+      moveGhost(e);
+      card.setPointerCapture(e.pointerId); 
+    });
+
+    document.addEventListener('pointermove', e => {
+      if (!ghost) return;
+      moveGhost(e);
+
+      draggedCard.style.display = 'none';
+      const targetElement = document.elementFromPoint(e.clientX, e.clientY);
+      draggedCard.style.display = 'flex';
+
+      const dropSlot = targetElement ? targetElement.closest('.drop-slot') : null;
+      if (currentHoverSlot && currentHoverSlot !== dropSlot) {
+        currentHoverSlot.classList.remove('drag-over');
+      }
+      if (dropSlot) {
+        dropSlot.classList.add('drag-over');
+        currentHoverSlot = dropSlot;
+      }
+    });
+
+    function moveGhost(e) {
+      ghost.style.left = (e.clientX - ghost.offsetWidth / 2) + 'px';
+      ghost.style.top = (e.clientY - ghost.offsetHeight / 2) + 'px';
+    }
+
+    document.addEventListener('pointerup', e => {
+      if (!ghost) return;
+      
+      ghost.remove();
+      ghost = null;
+      draggedCard.style.opacity = '1';
+      draggedCard.releasePointerCapture(e.pointerId);
+      
+      if (currentHoverSlot) {
+        currentHoverSlot.classList.remove('drag-over');
+        currentHoverSlot = null;
+      }
+
+      draggedCard.style.display = 'none';
+      const targetElement = document.elementFromPoint(e.clientX, e.clientY);
+      draggedCard.style.display = 'flex';
+
+      if (targetElement) {
+        const dropSlot = targetElement.closest('.drop-slot');
+        if (dropSlot) {
+          if (dropSlot.children.length > 0) {
+            const existingCard = dropSlot.children[0];
+            originalSlot.appendChild(existingCard);
+          }
+          dropSlot.appendChild(draggedCard);
+        }
+      }
+      
+      draggedCard = null;
+      checkSetupComplete();
+    });
+
+    function checkSetupComplete() {
+      const gridSlots = Array.from(bingoGrid.querySelectorAll('.drop-slot'));
+      const isComplete = gridSlots.every(slot => slot.children.length === 1);
+      
+      if (isComplete) {
+        startOverlay.classList.remove('hidden');
+      } else {
+        startOverlay.classList.add('hidden');
+      }
+    }
+
+    startBtn.addEventListener('click', () => {
+      gameMode = 'PLAY';
+      
+      poolSection.style.display = 'none';
+      mainContainer.classList.remove('landscape:gap-8');
+      
+      const mainTitle = document.getElementById('main-title');
+      mainTitle.textContent = "📱 스마트폰 습관 빙고";
+      document.getElementById('sub-title').style.display = 'none';
+      mainTitle.classList.replace('text-indigo-700', 'text-slate-800');
+      
+      resetBtn.classList.remove('hidden');
+      bingoCounter.classList.remove('hidden'); 
+      
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+    });
+
+    document.addEventListener('click', e => {
+      if (gameMode !== 'PLAY') return;
+      const card = e.target.closest('.card');
+      if (card) {
+        card.classList.toggle('checked');
+        checkBingo();
+      }
+    });
+
+    function checkBingo() {
+      const gridSlots = Array.from(bingoGrid.querySelectorAll('.drop-slot'));
+      const checkedState = gridSlots.map(slot => {
+        return slot.children[0] && slot.children[0].classList.contains('checked');
+      });
+
+      // 4x4 빙고 조건 (가로, 세로, 대각선)
+      const lines = [
+        [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15], // 가로
+        [0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15], // 세로
+        [0, 5, 10, 15], [3, 6, 9, 12] // 대각선
+      ];
+
+      lines.forEach((line, index) => {
+        const isBingo = line.every(idx => checkedState[idx]);
+        if (isBingo && !reportedBingos.has(index)) {
+          reportedBingos.add(index);
+          showBingoModal();
+        } else if (!isBingo && reportedBingos.has(index)) {
+          reportedBingos.delete(index);
+        }
+      });
+      
+      bingoCountText.textContent = reportedBingos.size;
+    }
+
+    const modal = document.getElementById('bingo-modal');
+    function showBingoModal() {
+      modal.classList.remove('hidden');
+      confetti({
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#4f46e5', '#10b981', '#f59e0b', '#ef4444', '#ec4899']
+      });
+    }
+
+    document.getElementById('close-modal-btn').addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+
+    resetBtn.addEventListener('click', () => {
+      if(confirm('빙고판을 초기화하고 다시 만드시겠습니까?')) {
+        gameMode = 'SETUP';
+        reportedBingos.clear();
+        bingoCountText.textContent = '0';
+        
+        poolSection.style.display = 'flex';
+        mainContainer.classList.add('landscape:gap-8');
+        
+        startOverlay.classList.add('hidden');
+        resetBtn.classList.add('hidden');
+        bingoCounter.classList.add('hidden'); 
+        
+        document.getElementById('main-title').textContent = "나만의 빙고판 만들기";
+        document.getElementById('main-title').classList.replace('text-slate-800', 'text-indigo-700');
+        document.getElementById('sub-title').style.display = 'block'; 
+        
+        initialize();
+      }
+    });
+
+    initialize();
+  </script>
+</body>
+</html>
