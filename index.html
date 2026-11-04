@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>반응형 스마트폰 습관 빙고 (4x4)</title>
+  <title>반응형 스마트폰 습관 빙고 (5x5)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
@@ -19,16 +19,16 @@
     .drop-slot {
       background-color: #e2e8f0;
       border: 2px dashed #cbd5e1;
-      border-radius: 8px; /* 4x4라 카드가 작아지므로 모서리 둥글기 살짝 줄임 */
+      border-radius: 6px; /* 5x5라 카드가 작아지므로 모서리 둥글기 더 줄임 */
       transition: background-color 0.2s;
       container-type: inline-size; 
     }
     .drop-slot.drag-over { background-color: #c7d2fe; border-color: #818cf8; border-style: solid; }
     
-    /* 4x4 격자에 맞게 텍스트/아이콘 크기 미세 조정 */
-    .responsive-icon { font-size: 1.5rem; font-size: 30cqi; line-height: 1.1; margin-bottom: 2cqi; }
-    .responsive-text { font-size: 0.55rem; font-size: 11cqi; line-height: 1.2; font-weight: 800; color: #334155; word-break: keep-all; }
-    .responsive-check { font-size: 2.5rem; font-size: 55cqi; }
+    /* 5x5 격자에 맞게 텍스트/아이콘 크기 추가 미세 조정 */
+    .responsive-icon { font-size: 1.2rem; font-size: 26cqi; line-height: 1.1; margin-bottom: 2cqi; }
+    .responsive-text { font-size: 0.5rem; font-size: 10.5cqi; line-height: 1.15; font-weight: 800; color: #334155; word-break: keep-all; }
+    .responsive-check { font-size: 2rem; font-size: 55cqi; }
 
     .card {
       touch-action: none; 
@@ -58,26 +58,26 @@
     <div id="grid-section" class="flex flex-col flex-1 w-full h-full items-center justify-center min-h-0 transition-all duration-500 ease-in-out">
       <div class="text-center mb-2 sm:mb-4 flex-shrink-0">
         <h1 id="main-title" class="text-lg sm:text-2xl md:text-3xl font-black text-indigo-700">나만의 빙고판 만들기</h1>
-        <p id="sub-title" class="text-xs sm:text-sm text-slate-500 font-semibold mb-2">카드를 끌어다 원하는 위치에 놓으세요!</p>
+        <p id="sub-title" class="text-xs sm:text-sm text-slate-500 font-semibold mb-1">카드를 끌어다 원하는 위치에 놓으세요!</p>
         
         <!-- 빙고 카운터 -->
-        <div id="bingo-counter" class="hidden inline-flex items-center px-4 py-1.5 bg-indigo-100 text-indigo-700 font-bold rounded-full text-sm sm:text-base border border-indigo-200 shadow-sm transition-all">
+        <div id="bingo-counter" class="hidden inline-flex items-center px-4 py-1.5 bg-indigo-100 text-indigo-700 font-bold rounded-full text-sm sm:text-base border border-indigo-200 shadow-sm transition-all mt-1">
           🔥 완성한 빙고: &nbsp;<span id="bingo-count" class="text-lg sm:text-xl font-black text-indigo-600">0</span> 줄
         </div>
       </div>
       
-      <!-- 4x4 Grid 설정 -->
-      <div id="bingo-grid" class="grid grid-cols-4 gap-1 sm:gap-1.5 w-full max-w-[min(100%,_50vh)] landscape:max-w-[min(100%,_80vh)] aspect-square shrink-0">
+      <!-- 5x5 Grid 설정 -->
+      <div id="bingo-grid" class="grid grid-cols-5 gap-0.5 sm:gap-1 w-full max-w-[min(100%,_50vh)] landscape:max-w-[min(100%,_80vh)] aspect-square shrink-0">
       </div>
     </div>
 
-    <div id="pool-section" class="flex flex-col w-full max-w-[min(100%,_45vh)] landscape:max-w-none landscape:w-[40%] landscape:h-full items-center justify-center relative transition-all duration-500 shrink-0">
+    <div id="pool-section" class="flex flex-col w-full max-w-[min(100%,_45vh)] landscape:max-w-none landscape:w-[45%] landscape:h-full items-center justify-center relative transition-all duration-500 shrink-0">
       <div class="text-center mb-2 flex-shrink-0">
         <h2 class="text-sm sm:text-base lg:text-lg font-bold text-slate-600">남은 카드</h2>
       </div>
       
-      <!-- 4x4 Grid 설정 -->
-      <div id="card-pool" class="grid grid-cols-4 gap-1 sm:gap-1.5 w-full landscape:max-w-[min(100%,_75vh)] aspect-square bg-slate-100 p-2 sm:p-3 rounded-2xl border-2 border-slate-200 shrink-0">
+      <!-- 5x5 Grid 설정 -->
+      <div id="card-pool" class="grid grid-cols-5 gap-0.5 sm:gap-1 w-full landscape:max-w-[min(100%,_80vh)] aspect-square bg-slate-100 p-1.5 sm:p-2.5 rounded-2xl border-2 border-slate-200 shrink-0">
       </div>
 
       <div id="start-overlay" class="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-3xl hidden">
@@ -101,24 +101,33 @@
   </div>
 
   <script>
-    // 4x4용 16개 항목 (기존 9개 + 추가 7개)
+    // 5x5용 25개 항목 (기존 16개 + 추가 9개)
     const itemsData = [
-      { id: 1, text: "침대에 누워 보다가<br>오래 봤다", icon: "🛏️" },
-      { id: 2, text: "“5분만” 하다가<br>30분이 지났다", icon: "⏰" },
-      { id: 3, text: "알림 때문에<br>하던 일을 멈췄다", icon: "🔔" },
-      { id: 4, text: "숏폼을 넘기다가<br>시간 감각을 잃었다", icon: "📱" },
-      { id: 5, text: "공부하기 싫어서<br>폰을 먼저 켰다", icon: "📚" },
-      { id: 6, text: "친구 답장을 기다리며<br>계속 확인했다", icon: "💬" },
-      { id: 7, text: "자기 전 폰을<br>보다가 늦게 잤다", icon: "🌙" },
-      { id: 8, text: "끄고 나서<br>“또 실패했다” 생각함", icon: "😟" },
-      { id: 9, text: "폰을 놓고도<br>계속 신경 쓰였다", icon: "💓" },
-      { id: 10, text: "화장실 갈 때<br>폰부터 챙겼다", icon: "🚽" },
-      { id: 11, text: "밥 먹을 때<br>영상을 꼭 틀었다", icon: "🍽️" },
-      { id: 12, text: "배터리가 부족하면<br>매우 불안했다", icon: "🔋" },
-      { id: 13, text: "이유 없이 화면을<br>자주 켰다 껐다", icon: "👆" },
-      { id: 14, text: "길을 걸으면서<br>폰을 본 적 있다", icon: "🚶" },
-      { id: 15, text: "해야 할 일을 미루고<br>스마트폰을 했다", icon: "⏳" },
-      { id: 16, text: "사용시간을 보고<br>놀란 적 있다", icon: "😲" }
+      { id: 1, text: "침대에 누워<br>오래 봤다", icon: "🛏️" },
+      { id: 2, text: "“5분만” 하다<br>30분 지났다", icon: "⏰" },
+      { id: 3, text: "알림 때문에<br>하던 일 멈춤", icon: "🔔" },
+      { id: 4, text: "숏폼 넘기다<br>시간 감각 잃음", icon: "📱" },
+      { id: 5, text: "공부하기 싫어<br>폰 먼저 켬", icon: "📚" },
+      { id: 6, text: "답장 기다리며<br>계속 확인", icon: "💬" },
+      { id: 7, text: "자기 전 폰<br>보다 늦게 잠", icon: "🌙" },
+      { id: 8, text: "끄고 나서<br>자책했다", icon: "😟" },
+      { id: 9, text: "폰 놓고도<br>신경 쓰였다", icon: "💓" },
+      { id: 10, text: "화장실 갈 때<br>폰부터 챙김", icon: "🚽" },
+      { id: 11, text: "밥 먹을 때<br>영상 꼭 틈", icon: "🍽️" },
+      { id: 12, text: "배터리 부족시<br>매우 불안함", icon: "🔋" },
+      { id: 13, text: "이유 없이<br>자주 켰다 끔", icon: "👆" },
+      { id: 14, text: "길 걸으면서<br>폰 본 적 있음", icon: "🚶" },
+      { id: 15, text: "할 일 미루고<br>스마트폰 함", icon: "⏳" },
+      { id: 16, text: "사용시간 보고<br>놀란 적 있음", icon: "😲" },
+      { id: 17, text: "눈 뜨자마자<br>폰부터 찾음", icon: "🥱" },
+      { id: 18, text: "폰 하다가<br>정류장 놓침", icon: "🚌" },
+      { id: 19, text: "데이터 없으면<br>너무 답답함", icon: "📶" },
+      { id: 20, text: "시력 나빠진 게<br>느껴짐", icon: "👓" },
+      { id: 21, text: "폰 없으면<br>뭘 할지 모름", icon: "🤔" },
+      { id: 22, text: "대화 중에도<br>폰만 본다", icon: "🗣️" },
+      { id: 23, text: "SNS 좋아요 수에<br>집착함", icon: "❤️" },
+      { id: 24, text: "거북목/손목<br>통증 느낌", icon: "🤕" },
+      { id: 25, text: "다른 일에 집중<br>어려움", icon: "😵‍💫" }
     ];
 
     const bingoGrid = document.getElementById('bingo-grid');
@@ -138,7 +147,8 @@
       bingoGrid.innerHTML = '';
       cardPool.innerHTML = '';
       
-      for(let i=0; i<16; i++) {
+      // 5x5 = 25 슬롯
+      for(let i=0; i<25; i++) {
         const slot = document.createElement('div');
         slot.className = 'drop-slot relative w-full h-full flex items-center justify-center';
         bingoGrid.appendChild(slot);
@@ -149,11 +159,11 @@
         slot.className = 'drop-slot relative w-full h-full flex items-center justify-center !border-transparent !bg-transparent';
         
         const card = document.createElement('div');
-        card.className = 'card bg-white border-2 border-slate-200 rounded-lg w-full h-full flex flex-col items-center justify-center p-0.5 drop-shadow-sm absolute inset-0';
+        card.className = 'card bg-white border border-slate-200 rounded-md w-full h-full flex flex-col items-center justify-center p-[1px] drop-shadow-sm absolute inset-0';
         card.innerHTML = `
           <div class="responsive-icon">${item.icon}</div>
           <div class="responsive-text text-center">${item.text}</div>
-          <div class="check-mark absolute inset-0 bg-emerald-500/20 rounded-lg items-center justify-center backdrop-blur-[1px]">
+          <div class="check-mark absolute inset-0 bg-emerald-500/20 rounded-md items-center justify-center backdrop-blur-[1px]">
             <span class="responsive-check text-emerald-600 drop-shadow font-black opacity-90">⭕</span>
           </div>
         `;
@@ -290,11 +300,14 @@
         return slot.children[0] && slot.children[0].classList.contains('checked');
       });
 
-      // 4x4 빙고 조건 (가로, 세로, 대각선)
+      // 5x5 빙고 조건 (가로, 세로, 대각선)
       const lines = [
-        [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15], // 가로
-        [0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15], // 세로
-        [0, 5, 10, 15], [3, 6, 9, 12] // 대각선
+        // 가로
+        [0, 1, 2, 3, 4], [5, 6, 7, 8, 9], [10, 11, 12, 13, 14], [15, 16, 17, 18, 19], [20, 21, 22, 23, 24],
+        // 세로
+        [0, 5, 10, 15, 20], [1, 6, 11, 16, 21], [2, 7, 12, 17, 22], [3, 8, 13, 18, 23], [4, 9, 14, 19, 24],
+        // 대각선
+        [0, 6, 12, 18, 24], [4, 8, 12, 16, 20]
       ];
 
       lines.forEach((line, index) => {
