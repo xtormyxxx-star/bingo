@@ -120,10 +120,6 @@ body.play .card{cursor:pointer;touch-action:manipulation}
     <div class="tools">
       <label for="goal">빙고 목표</label>
       <select id="goal"><option value="1">1줄</option><option value="2">2줄</option><option value="3">3줄</option><option value="4" selected>4줄</option><option value="5">5줄</option></select>
-      <button class="ghost" id="clearBtn" type="button" hidden>씨앗 지우기</button>
-      <span class="confirm" id="clearAsk" hidden>심은 씨앗을 모두 지울까요?
-        <button class="ghost" id="clearYes" type="button">지우기</button>
-        <button class="ghost" id="clearNo" type="button">취소</button></span>
       <button class="ghost" id="resetBtn" type="button">처음부터</button>
       <span class="confirm" id="resetAsk" hidden>빙고판을 모두 비울까요?
         <button class="ghost" id="resetYes" type="button">비우기</button>
@@ -200,8 +196,6 @@ const placedCount=()=>S.board.filter(v=>v!==null).length;
 function render(){
   const play=S.phase==="play";
   document.body.classList.toggle("play",play);
-  if(!play){$("clearAsk").hidden=true}
-  $("clearBtn").hidden=!play||!$("clearAsk").hidden;
   const dl=doneLines(), bloom=new Set(dl.flat()), n=dl.length;
   $("sub").textContent=play?"나도 그런 적 있는 칸을 눌러 씨앗을 심고, 줄을 완성해 꽃을 피워요"
     :"카드를 끌어다 빙고판에 놓거나, 카드를 누른 뒤 칸을 누르세요";
@@ -334,9 +328,6 @@ document.addEventListener("click",e=>{
 if(S.phase==="setup"&&placedCount()===25)S.phase="play";
 $("goal").value=String(S.goal);
 $("goal").onchange=e=>{S.goal=+e.target.value;S.celebrated=Math.min(S.celebrated,doneLines().length>=S.goal?S.goal:0);save();render()};
-$("clearBtn").onclick=()=>{$("clearAsk").hidden=false;$("clearBtn").hidden=true};
-$("clearNo").onclick=()=>{$("clearAsk").hidden=true;$("clearBtn").hidden=false};
-$("clearYes").onclick=()=>{S.marks=Array(25).fill(false);S.celebrated=0;save();$("clearAsk").hidden=true;render()};
 $("resetBtn").onclick=()=>{$("resetAsk").hidden=false;$("resetBtn").hidden=true};
 $("resetNo").onclick=()=>{$("resetAsk").hidden=true;$("resetBtn").hidden=false};
 $("resetYes").onclick=()=>{S=fresh(S.goal);sel=null;save();$("resetAsk").hidden=true;$("resetBtn").hidden=false;render()};
